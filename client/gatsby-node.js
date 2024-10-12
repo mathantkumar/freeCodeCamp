@@ -23,11 +23,7 @@ exports.onCreateNode = function onCreateNode({ node, actions, getNode }) {
   if (node.internal.type === 'MarkdownRemark') {
     const slug = createFilePath({ node, getNode });
     if (!slug.includes('LICENSE')) {
-      const {
-        frontmatter: { component = '' }
-      } = node;
       createNodeField({ node, name: 'slug', value: slug });
-      createNodeField({ node, name: 'component', value: component });
     }
   }
 };
@@ -74,12 +70,14 @@ exports.createPages = async function createPages({
       ) {
         edges {
           node {
+            id
             challenge {
               block
               blockType
               certification
               challengeType
               dashedName
+              demoType
               disableLoopProtectTests
               disableLoopProtectPreview
               fields {
@@ -121,7 +119,6 @@ exports.createPages = async function createPages({
             fields {
               slug
               nodeIdentity
-              component
             }
             frontmatter {
               certification
@@ -129,9 +126,7 @@ exports.createPages = async function createPages({
               superBlock
               title
             }
-            htmlAst
             id
-            excerpt
           }
         }
       }
@@ -266,6 +261,7 @@ exports.createSchemaCustomization = ({ actions }) => {
     type Challenge {
       blockType: String
       challengeFiles: [FileContents]
+      explanation: String
       notes: String
       url: String
       assignments: [String]
@@ -273,6 +269,7 @@ exports.createSchemaCustomization = ({ actions }) => {
       msTrophyId: String
       fillInTheBlank: FillInTheBlank
       scene: Scene
+      quizzes: [Quiz]
     }
     type FileContents {
       fileKey: String
@@ -333,6 +330,14 @@ exports.createSchemaCustomization = ({ actions }) => {
       x: Float
       y: Float
       z: Float
+    }
+    type Quiz {
+      questions: [QuizQuestion]
+    }
+    type QuizQuestion {
+      text: String
+      distractors: [String]
+      answer: String
     }
   `;
   createTypes(typeDefs);

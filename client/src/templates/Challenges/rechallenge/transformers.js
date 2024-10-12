@@ -14,7 +14,8 @@ import {
   transformContents,
   transformHeadTailAndContents,
   setExt,
-  compileHeadTail
+  compileHeadTail,
+  createSource
 } from '../../../../../shared/utils/polyvinyl';
 import { WorkerExecutor } from '../utils/worker-executor';
 
@@ -177,9 +178,17 @@ async function transformSASS(documentElement) {
 async function transformScript(documentElement) {
   await loadBabel();
   await loadPresetEnv();
+  await loadPresetReact();
   const scriptTags = documentElement.querySelectorAll('script');
   scriptTags.forEach(script => {
-    script.innerHTML = babelTransformCode(getBabelOptions(presetsJS))(
+    const isBabel = script.type === 'text/babel';
+    // TODO: make the use of JSX conditional on more than just the script type.
+    // It should only be used for React challenges since it would be confusing
+    // for learners to see the results of a transformation they didn't ask for.
+    const options = isBabel ? presetsJSX : presetsJS;
+
+    if (isBabel) script.removeAttribute('type'); // otherwise the browser will ignore the script
+    script.innerHTML = babelTransformCode(getBabelOptions(options))(
       script.innerHTML
     );
   });
@@ -267,6 +276,7 @@ const htmlTransformer = cond([
 ]);
 
 export const getTransformers = loopProtectOptions => [
+  createSource,
   replaceNBSP,
   babelTransformer(loopProtectOptions),
   partial(compileHeadTail, ''),
@@ -274,6 +284,7 @@ export const getTransformers = loopProtectOptions => [
 ];
 
 export const getPythonTransformers = () => [
+  createSource,
   replaceNBSP,
   partial(compileHeadTail, '')
 ];

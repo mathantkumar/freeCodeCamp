@@ -82,6 +82,37 @@ const commandJoi = Joi.object().keys({
   dialogue: DialogueJoi
 });
 
+const questionJoi = Joi.object().keys({
+  text: Joi.string().required(),
+  answers: Joi.array()
+    .items(
+      Joi.object().keys({
+        answer: Joi.string().required(),
+        feedback: Joi.string().allow(null)
+      })
+    )
+    .required(),
+  solution: Joi.number().required()
+});
+
+const quizJoi = Joi.object().keys({
+  questions: Joi.array()
+    .items(
+      Joi.object().keys({
+        text: Joi.string().required(),
+        distractors: Joi.array()
+          .items(Joi.string().required())
+          .min(3)
+          .max(3)
+          .required(),
+        answer: Joi.string().required()
+      })
+    )
+    .min(20)
+    .max(20)
+    .required()
+});
+
 const schema = Joi.object()
   .keys({
     block: Joi.string().regex(slugRE).required(),
@@ -104,10 +135,12 @@ const schema = Joi.object()
     checksum: Joi.number(),
     // TODO: require this only for normal challenges, not certs
     dashedName: Joi.string().regex(slugRE),
+    demoType: Joi.string().valid('onClick', 'onLoad'),
     description: Joi.when('challengeType', {
       is: [
         challengeTypes.step,
         challengeTypes.video,
+        challengeTypes.multipleChoice,
         challengeTypes.fillInTheBlank
       ],
       then: Joi.string().allow(''),
@@ -115,6 +148,10 @@ const schema = Joi.object()
     }),
     disableLoopProtectTests: Joi.boolean().required(),
     disableLoopProtectPreview: Joi.boolean().required(),
+    explanation: Joi.when('challengeType', {
+      is: [challengeTypes.multipleChoice, challengeTypes.fillInTheBlank],
+      then: Joi.string()
+    }),
     challengeFiles: Joi.array().items(fileJoi),
     guideUrl: Joi.string().uri({ scheme: 'https' }),
     hasEditableBoundaries: Joi.boolean(),
@@ -178,17 +215,19 @@ const schema = Joi.object()
         cid: Joi.number().required()
       })
     }),
-    question: Joi.object().keys({
-      text: Joi.string().required(),
-      answers: Joi.array()
-        .items(
-          Joi.object().keys({
-            answer: Joi.string().required(),
-            feedback: Joi.string().allow(null)
-          })
-        )
-        .required(),
-      solution: Joi.number().required()
+    questions: Joi.when('challengeType', {
+      is: [
+        challengeTypes.video,
+        challengeTypes.multipleChoice,
+        challengeTypes.theOdinProject
+      ],
+      then: Joi.array().items(questionJoi).min(1).required(),
+      otherwise: Joi.forbidden()
+    }),
+    quizzes: Joi.when('challengeType', {
+      is: challengeTypes.quiz,
+      then: Joi.array().items(quizJoi).min(1).required(),
+      otherwise: Joi.forbidden()
     }),
     required: Joi.array().items(
       Joi.object().keys({

@@ -45,6 +45,7 @@ import {
   executeChallenge,
   initConsole,
   initTests,
+  initVisibleEditors,
   previewMounted,
   updateChallengeMeta,
   openModal,
@@ -83,6 +84,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
       createFiles,
       initConsole,
       initTests,
+      initVisibleEditors,
       updateChallengeMeta,
       challengeMounted,
       executeChallenge,
@@ -104,13 +106,13 @@ interface ShowClassicProps extends Pick<PreviewProps, 'previewMounted'> {
   challengeFiles: ChallengeFiles;
   initConsole: (arg0: string) => void;
   initTests: (tests: Test[]) => void;
+  initVisibleEditors: () => void;
   isChallengeCompleted: boolean;
   output: string[];
   pageContext: {
     challengeMeta: ChallengeMeta;
     projectPreview: {
       challengeData: CompletedChallenge;
-      showProjectPreview: boolean;
     };
   };
   updateChallengeMeta: (arg0: ChallengeMeta) => void;
@@ -183,6 +185,7 @@ function ShowClassic({
       challenge: {
         challengeFiles: seedChallengeFiles,
         block,
+        demoType,
         title,
         description,
         instructions,
@@ -202,13 +205,14 @@ function ShowClassic({
   pageContext: {
     challengeMeta,
     challengeMeta: { isFirstStep, nextChallengePath, prevChallengePath },
-    projectPreview: { challengeData, showProjectPreview }
+    projectPreview: { challengeData }
   },
   createFiles,
   cancelTests,
   challengeMounted,
   initConsole,
   initTests,
+  initVisibleEditors,
   updateChallengeMeta,
   openModal,
   setIsAdvancing,
@@ -359,7 +363,13 @@ function ShowClassic({
     );
 
     initTests(tests);
-    if (showProjectPreview) openModal('projectPreview');
+
+    initVisibleEditors();
+
+    // Typically, this kind of preview only appears on the first step of a
+    // project and is shown (once) automatically. In contrast, labs are more
+    // freeform, so the preview is shown on demand.
+    if (demoType === 'onLoad') openModal('projectPreview');
     updateChallengeMeta({
       ...challengeMeta,
       title,
@@ -371,9 +381,11 @@ function ShowClassic({
   };
 
   const renderInstructionsPanel = ({
-    toolPanel
+    toolPanel,
+    hasDemo
   }: {
     toolPanel: React.ReactNode;
+    hasDemo: boolean;
   }) => {
     return (
       <SidePanel
@@ -397,6 +409,7 @@ function ShowClassic({
         instructionsPanelRef={instructionsPanelRef}
         toolPanel={toolPanel}
         superBlock={superBlock}
+        hasDemo={hasDemo}
       />
     );
   };
@@ -420,7 +433,7 @@ function ShowClassic({
           resizeProps={resizeProps}
           title={title}
           usesMultifileEditor={usesMultifileEditor}
-          showProjectPreview={showProjectPreview}
+          showProjectPreview={demoType === 'onLoad'}
         />
       )
     );
@@ -448,7 +461,8 @@ function ShowClassic({
             hasEditableBoundaries={hasEditableBoundaries}
             hasPreview={showPreview}
             instructions={renderInstructionsPanel({
-              toolPanel: null
+              toolPanel: null,
+              hasDemo: demoType === 'onClick'
             })}
             notes={notes}
             onPreviewResize={onPreviewResize}
@@ -482,7 +496,8 @@ function ShowClassic({
             hasEditableBoundaries={hasEditableBoundaries}
             hasPreview={showPreview}
             instructions={renderInstructionsPanel({
-              toolPanel: <ToolPanel guideUrl={guideUrl} videoUrl={videoUrl} />
+              toolPanel: <ToolPanel guideUrl={guideUrl} videoUrl={videoUrl} />,
+              hasDemo: demoType === 'onClick'
             })}
             isFirstStep={isFirstStep}
             layoutState={layout}
@@ -507,12 +522,15 @@ function ShowClassic({
         <CompletionModal />
         <HelpModal challengeTitle={title} challengeBlock={blockName} />
         <VideoModal videoUrl={videoUrl} />
-        <ResetModal />
+        <ResetModal challengeType={challengeType} />
         <ProjectPreviewModal
           challengeData={challengeData}
           closeText={t('buttons.start-coding')}
-          previewTitle={t('learn.project-preview-title')}
-          showProjectPreview={showProjectPreview}
+          previewTitle={
+            demoType === 'onClick'
+              ? t('learn.demo-project-title')
+              : t('learn.project-preview-title')
+          }
         />
         <ShortcutsModal />
       </LearnLayout>
@@ -525,10 +543,11 @@ ShowClassic.displayName = 'ShowClassic';
 export default connect(mapStateToProps, mapDispatchToProps)(ShowClassic);
 
 export const query = graphql`
-  query ClassicChallenge($slug: String!) {
-    challengeNode(challenge: { fields: { slug: { eq: $slug } } }) {
+  query ClassicChallenge($id: String!) {
+    challengeNode(id: { eq: $id }) {
       challenge {
         block
+        demoType
         title
         description
         id

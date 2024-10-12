@@ -11,6 +11,7 @@ export { msTrophyChallengeCompleted } from './schemas/challenge/ms-trophy-challe
 export { projectCompleted } from './schemas/challenge/project-completed';
 export { saveChallenge } from './schemas/challenge/save-challenge';
 export { deprecatedEndpoints } from './schemas/deprecated';
+export { addDonation } from './schemas/donate/add-donation';
 export { chargeStripeCard } from './schemas/donate/charge-stripe-card';
 export { chargeStripe } from './schemas/donate/charge-stripe';
 export { createStripePaymentIntent } from './schemas/donate/create-stripe-payment-intent';
@@ -38,3 +39,4 @@ export { postMsUsername } from './schemas/user/post-ms-username';
 export { reportUser } from './schemas/user/report-user';
 export { resetMyProgress } from './schemas/user/reset-my-progress';
 export { submitSurvey } from './schemas/user/submit-survey';
+export { userExamEnvironmentToken } from './schemas/user/exam-environment-token';
